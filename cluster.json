@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    { "id": "n1", "url": "http://127.0.0.1:3001" },
+    { "id": "n2", "url": "http://127.0.0.1:3002" },
+    { "id": "n3", "url": "http://127.0.0.1:3003" },
+    { "id": "n4", "url": "http://127.0.0.1:3004" },
+    { "id": "n5", "url": "http://127.0.0.1:3005" }
+  ],
+  "timing": {
+    "electionTimeoutMinMs": 150,
+    "electionTimeoutMaxMs": 300,
+    "heartbeatIntervalMs": 50
+  },
+  "rpcTimeoutMs": 100
+}
