@@ -156,6 +156,13 @@ export class RaftNode {
     if (!this.running || this.role === Role.Leader) {
       return;
     }
+    if (this.role === Role.Candidate) {
+      const quorum = Math.floor((this.peers.length + 1) / 2) + 1;
+      this.logger.warn(
+        `election in term ${this.state.currentTerm} timed out: received ${this.votesReceived.size}/${quorum} required votes `
+        + `(cluster size ${this.peers.length + 1}); no quorum, retrying`,
+      );
+    }
     this.startElection();
   }
 

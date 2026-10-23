@@ -1,10 +1,11 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createInterface } from "node:readline";
+import { parseClusterCliOptions } from "../src/config/cli.js";
 import { loadClusterConfig } from "../src/config/cluster-config.js";
 import { collectStatus } from "./cluster-status.js";
 
-const configPath = process.argv[2] ?? "cluster.json";
-const cluster = loadClusterConfig(configPath);
+const options = parseClusterCliOptions(process.argv.slice(2));
+const cluster = loadClusterConfig(options.configPath);
 const processes = new Map<string, ChildProcess>();
 
 function startNode(id: string): void {
@@ -12,7 +13,14 @@ function startNode(id: string): void {
     console.log(`${id} is already running`);
     return;
   }
-  const child = spawn(process.execPath, ["--import", "tsx", "src/main.ts", "--config", configPath, "--id", id], {
+  const args = [
+    "--import", "tsx", "src/main.ts", "--config", options.configPath, "--id", id,
+    "--storage", options.storage, "--data-dir", options.dataDir,
+  ];
+  if (options.host !== undefined) {
+    args.push("--host", options.host);
+  }
+  const child = spawn(process.execPath, args, {
     stdio: ["ignore", "inherit", "inherit"],
   });
   child.once("exit", () => processes.delete(id));

@@ -6,6 +6,7 @@ import { loadClusterConfig } from "./config/cluster-config.js";
 import { RaftNode } from "./core/raft-node.js";
 import { ConsoleLogger } from "./logging/console-logger.js";
 import { FileStateStorage } from "./storage/file-state-storage.js";
+import { MemoryStateStorage } from "./storage/memory-state-storage.js";
 import { HttpTransport } from "./transport/http-transport.js";
 
 async function main(): Promise<void> {
@@ -21,7 +22,9 @@ async function main(): Promise<void> {
   const node = new RaftNode({
     id: self.id,
     peers: peers.map((peer) => peer.id),
-    storage: new FileStateStorage(join(options.dataDir, `${self.id}.json`)),
+    storage: options.storage === "memory"
+      ? new MemoryStateStorage()
+      : new FileStateStorage(join(options.dataDir, `${self.id}.json`)),
     transport: new HttpTransport(new Map(peers.map((peer) => [peer.id, peer.url])), cluster.rpcTimeoutMs),
     timing: cluster.timing,
     logger,
@@ -32,6 +35,9 @@ async function main(): Promise<void> {
   server.listen(Number(url.port), options.host ?? url.hostname);
   await once(server, "listening");
   logger.info(`listening on ${self.url}`);
+  logger.info(
+    `storage=${options.storage}, cluster size=${cluster.nodes.length}, quorum=${Math.floor(cluster.nodes.length / 2) + 1}`,
+  );
   node.start();
 
   const shutdown = (): void => {

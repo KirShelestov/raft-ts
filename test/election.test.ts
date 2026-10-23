@@ -39,6 +39,35 @@ describe("Leader election", () => {
     assert.equal(current.currentTerm, leader.currentTerm);
   });
 
+  it("elects a stable leader when the configured cluster has exactly two nodes", async () => {
+    cluster = TestCluster.ofSize(2);
+    const leader = await cluster.waitForLeader();
+    await delay(fastTiming.electionTimeoutMaxMs * 5);
+    const current = await cluster.waitForLeader();
+    assert.equal(current.id, leader.id);
+    assert.equal(current.currentTerm, leader.currentTerm);
+    const follower = leader.peers[0];
+    assert.ok(follower);
+    assert.equal(cluster.node(follower).status().votedFor, leader.id);
+  });
+
+  it("requires three of five configured nodes and recovers when the third returns", async () => {
+    cluster = TestCluster.ofSize(5);
+    for (const id of ["n3", "n4", "n5"]) {
+      cluster.crash(id);
+    }
+    await delay(fastTiming.electionTimeoutMaxMs * 5);
+    assert.equal(cluster.leaders().length, 0);
+    assert.ok(cluster.statuses().every((status) => status.currentTerm > 1));
+
+    cluster.restart("n3");
+    const leader = await cluster.waitForLeader(["n1", "n2", "n3"]);
+    await delay(fastTiming.electionTimeoutMaxMs * 3);
+    const current = await cluster.waitForLeader(["n1", "n2", "n3"]);
+    assert.equal(current.id, leader.id);
+    assert.equal(current.currentTerm, leader.currentTerm);
+  });
+
   it("elects a single-node cluster leader on its own", async () => {
     standalone = new RaftNode({
       id: "solo",
