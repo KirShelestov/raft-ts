@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseCliOptions, parseClusterCliOptions } from "../src/config/cli.js";
+import { parseCliOptions } from "../src/config/cli.js";
 
 describe("Launch options", () => {
   it("keeps file storage as the default", () => {
@@ -15,33 +15,17 @@ describe("Launch options", () => {
 
   it("rejects an unknown storage mode", () => {
     assert.throws(() => parseCliOptions(["--id", "n1", "--storage", "unknown"]), /file or memory/);
-    assert.throws(() => parseClusterCliOptions(["--storage", "unknown"]), /file or memory/);
   });
 
   it("requires a node id", () => {
     assert.throws(() => parseCliOptions([]), /--id/);
   });
 
-  it("accepts cluster options without a positional config", () => {
-    assert.deepEqual(parseClusterCliOptions(["--storage", "memory"]), {
-      configPath: "cluster.json", dataDir: "data", storage: "memory", host: undefined,
-    });
-  });
-
-  it("preserves the positional cluster config and accepts launch options", () => {
-    assert.deepEqual(parseClusterCliOptions([
-      "cluster.two-nodes.json", "--storage", "memory", "--data-dir", "custom-data", "--host", "127.0.0.1",
+  it("preserves config, data directory and host options", () => {
+    assert.deepEqual(parseCliOptions([
+      "--id", "n1", "--config", "custom.json", "--storage", "memory", "--data-dir", "custom-data", "--host", "127.0.0.1",
     ]), {
-      configPath: "cluster.two-nodes.json", dataDir: "custom-data", storage: "memory", host: "127.0.0.1",
+      id: "n1", configPath: "custom.json", dataDir: "custom-data", storage: "memory", host: "127.0.0.1",
     });
-  });
-
-  it("accepts an explicit cluster config", () => {
-    assert.equal(parseClusterCliOptions(["--config", "custom.json"]).configPath, "custom.json");
-  });
-
-  it("rejects ambiguous cluster configs", () => {
-    assert.throws(() => parseClusterCliOptions(["one.json", "two.json"]), /one cluster config/);
-    assert.throws(() => parseClusterCliOptions(["one.json", "--config", "two.json"]), /one cluster config/);
   });
 });
